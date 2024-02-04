@@ -28,9 +28,9 @@ rf_rate = float(input("What risk free rate do you want ? ")) # later, need to im
 weight = np.full(len(basket_df.columns), 1/len(basket_df.columns), dtype=float)
 n_cov_matrix = basket_df.cov()
 
-#Step 6: create the empty dataframe to store our mean results
+#Step 6: create the empty dataframe to store our mean and sharpe ratio results
 result_basket_df = pd.DataFrame(columns=basket_df.columns)
-
+sharpe_ratio_df = pd.DataFrame(columns=['Sharpe Ratio'])
 
 #--------------LOOP STARTS HERE----------------------------------------------------------
 #----------------------------------------------------------------------------------------
@@ -55,29 +55,26 @@ for i in range(nb_months_start,len(basket_df)):
     
     # Define optimization constraints (weights sum to 1)
     constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1})
-    # good type
     
     
     # Define optimization bounds (weights between 0 and 1)
     bnds = tuple((0, 1) for _ in range(len(weight)))
-    # good type
     
     
     # Run the optimization to maximize the positive Sharpe ratio
     result = minimize(lambda w: -sharpe_ratio_def(w, rf_rate, mean_return, n_cov_matrix),
                       weight, method='SLSQP', bounds=bnds, constraints=constraints)
-    # good type
     
     
     # Extract the optimized weights
-    optimized_weights = result.x  # good type
+    optimized_weights = result.x
     
     # Calculate the optimized portfolio return and standard deviation
     optimized_portfolio_return = optimized_weights @ mean_return *12 # good type
-    optimized_portfolio_std_dev = np.sqrt(optimized_weights @ n_cov_matrix @ optimized_weights) *np.sqrt(12)# good type
+    optimized_portfolio_std_dev = np.sqrt(optimized_weights @ n_cov_matrix @ optimized_weights) *np.sqrt(12)
     
     # Calculate the optimized Sharpe ratio
-    optimized_sharpe_ratio = sharpe_ratio_def(optimized_weights, rf_rate, mean_return, n_cov_matrix) # good type
+    optimized_sharpe_ratio = sharpe_ratio_def(optimized_weights, rf_rate, mean_return, n_cov_matrix)
     
     #print(optimized_portfolio_return)
     #print(optimized_portfolio_std_dev)
@@ -89,8 +86,7 @@ for i in range(nb_months_start,len(basket_df)):
     #new_basket_df= pd.DataFrame(columns= basket_df.columns)
     row_date = pd.to_datetime(basket_df.index[i])
     result_basket_df.loc[row_date]= optimized_weights
-    #new_basket_df.loc[row_date]= optimized_weights
+    sharpe_ratio_df.loc[row_date] = optimized_sharpe_ratio
+   
 
-
-
-
+final_df = pd.concat([result_basket_df,sharpe_ratio_df], axis=1)
